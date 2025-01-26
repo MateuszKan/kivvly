@@ -40,6 +40,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 
+import Image from "next/image";
+
 // ----- Amenities array -----
 const amenities = [
   { id: "toilets", label: "Toilets" },
@@ -317,7 +319,7 @@ export default function AddPlacePage() {
                   {imagePreviews.length > 0 && (
                     <div className="flex space-x-2 mt-2">
                       {imagePreviews.map((url, index) => (
-                        <img
+                        <Image
                           key={index}
                           src={url}
                           alt={`Preview ${index + 1}`}
@@ -385,6 +387,13 @@ export default function AddPlacePage() {
           </CardContent>
         </Card>
       </div>
+
+      <Image
+        src="/path/to/image.jpg"
+        alt="Descriptive alt"
+        width={300}
+        height={200}
+      />
 
       {/* IMPORTANT: The Toaster component must be rendered for toasts to appear */}
       <Toaster />

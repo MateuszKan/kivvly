@@ -21,6 +21,7 @@ import { doc, onSnapshot } from "firebase/firestore"
 import AddPlaceButton from "@/components/AddPlaceButton"
 import AdminButton from "@/components/AdminButton"
 import LoginButton from "@/components/LoginButton"
+import Image from "next/image";
 
 /** Shape of your user doc in Firestore */
 interface UserProfile {
@@ -70,7 +71,7 @@ export default function Navbar() {
       <div className="flex items-center space-x-2">
         {/* Logo as a link */}
         <Link href="/" className="flex items-center">
-          <img
+          <Image
             src="/kivvly.svg"
             alt="Kivvly Logo"
             className="mr-2 h-6 w-auto sm:h-8 md:h-10"

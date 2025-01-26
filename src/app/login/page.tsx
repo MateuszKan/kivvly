@@ -17,14 +17,16 @@ import {
 import {
   doc,
   setDoc,
-  getDoc,         // <-- We need getDoc to check existing data
+  getDoc,
   serverTimestamp
 } from "firebase/firestore";
 
-import { auth, db } from "@/lib/firebase"; // Adjust paths as needed
+import { auth, db } from "@/lib/firebase";
 
-import { z } from "zod";
-import { ZodError } from "zod";
+// Import FirebaseError from Firebase's app package
+import { FirebaseError } from "firebase/app";
+
+import { z, ZodError } from "zod";
 
 import Navbar from "@/components/navbar";
 import { Button } from "@/components/ui/button";
@@ -90,8 +92,12 @@ export default function AuthPage() {
     try {
       await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
       router.push("/");
-    } catch (error: any) {
-      setErrorMessage(error.message || "Failed to log in. Please try again.");
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setErrorMessage(error.message || "Failed to log in. Please try again.");
+      } else {
+        setErrorMessage("Failed to log in. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -127,7 +133,7 @@ export default function AuthPage() {
       // Update the user's displayName in Firebase Auth
       await updateProfile(user, { displayName: registerName });
 
-      // Store additional user info in Firestore (using user.uid as the doc ID)
+      // Store additional user info in Firestore
       await setDoc(doc(db, "users", user.uid), {
         email: registerEmail,
         displayName: registerName,
@@ -146,17 +152,19 @@ export default function AuthPage() {
 
       // Optionally, redirect after registration:
       // router.push("/");
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof ZodError) {
         setErrorMessage(error.issues[0].message);
-      } else if (error.code === "auth/email-already-in-use") {
+      } else if (error instanceof FirebaseError && error.code === "auth/email-already-in-use") {
         setErrorMessage(
           "This email is already registered. If you forgot your password, please click the 'Forgot your password?' link below."
         );
-      } else {
+      } else if (error instanceof Error) {
         setErrorMessage(
           error.message || "Failed to create an account. Please try again."
         );
+      } else {
+        setErrorMessage("Failed to create an account. Please try again.");
       }
     } finally {
       setIsLoading(false);
@@ -182,10 +190,12 @@ export default function AuthPage() {
       setSuccessMessage(
         "A password reset link has been sent to the registration email."
       );
-    } catch (error: any) {
-      setErrorMessage(
-        error.message || "Failed to send password reset. Please try again."
-      );
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setErrorMessage(error.message || "Failed to send password reset. Please try again.");
+      } else {
+        setErrorMessage("Failed to send password reset. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -219,9 +229,6 @@ export default function AuthPage() {
       case "Apple":
         // Apple uses the generic OAuthProvider with 'apple.com'
         providerInstance = new OAuthProvider("apple.com");
-        // (Optional) Request additional scopes
-        // providerInstance.addScope("email");
-        // providerInstance.addScope("name");
         break;
       default:
         return;
@@ -236,7 +243,6 @@ export default function AuthPage() {
 
       if (docSnap.exists()) {
         // If the user doc already exists, merge ONLY the fields we want to update.
-        // This preserves existing fields like isAdmin, isBanned, etc.
         await setDoc(
           userRef,
           {
@@ -249,24 +255,28 @@ export default function AuthPage() {
           { merge: true }
         );
       } else {
-        // If doc doesn't exist yet, create a new one with default values (isAdmin=false, etc.)
+        // If doc doesn't exist yet, create a new one with default values
         await setDoc(userRef, {
           email: user.email,
           displayName: user.displayName || "No Name",
           avatarUrl:
             user.photoURL || "https://via.placeholder.com/128?text=No+Avatar",
           jobOccupation: "",
-          isAdmin: false, // new user defaults to non-admin
+          isAdmin: false,
           isBanned: false,
           createdAt: serverTimestamp(),
         });
       }
 
       router.push("/");
-    } catch (error: any) {
-      setErrorMessage(
-        error.message || `Failed to log in with ${providerName}.`
-      );
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setErrorMessage(
+          error.message || `Failed to log in with ${providerName}.`
+        );
+      } else {
+        setErrorMessage(`Failed to log in with ${providerName}.`);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -287,10 +297,12 @@ export default function AuthPage() {
       }
       await sendPasswordResetEmail(auth, loginEmail);
       setSuccessMessage("A password reset link has been sent to your email.");
-    } catch (error: any) {
-      setErrorMessage(
-        error.message || "Failed to send password reset. Please try again."
-      );
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setErrorMessage(error.message || "Failed to send password reset. Please try again.");
+      } else {
+        setErrorMessage("Failed to send password reset. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }

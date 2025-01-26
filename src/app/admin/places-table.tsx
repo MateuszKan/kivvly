@@ -21,7 +21,7 @@ type Place = {
   name: string;
   status: "pending" | "approved" | "rejected";
   amenities?: string[];
-  [key: string]: any; // for optional fields like images, lat/lng, etc.
+  [key: string]: unknown; // Replace 'any' with 'unknown'
 };
 
 export function PlacesTable() {
