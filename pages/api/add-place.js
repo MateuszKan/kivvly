@@ -26,7 +26,7 @@ export default async function handler(req, res) {
   const userId = decodedToken.uid;
 
   // Parse the request body
-  const { locationName, postcode, amenities } = req.body;
+  const { locationName, postcode } = req.body;
   if (!locationName || !postcode) {
     return res.status(400).json({ message: "Location name and postcode are required." });
   }

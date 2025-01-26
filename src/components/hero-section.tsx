@@ -12,7 +12,6 @@ import { Input } from "@/components/ui/input";
 import { Search, MapPin } from "lucide-react";
 import Navbar from "@/components/navbar";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useRouter } from "next/navigation";
 import { GoogleMapPinCard } from "@/components/google-map-pin-card";
 import { db } from "@/lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
@@ -25,17 +24,14 @@ const grayscaleStyle: google.maps.MapTypeStyle[] = [
 
 const defaultCenter = { lat: 40.7128, lng: -74.006 };
 
-// Marker icons
+/** Marker icons */
 const MARKER_ICON = {
   url: "/marker.svg",
   scaledSize: new google.maps.Size(40, 40),
   anchor: new google.maps.Point(20, 40),
 };
 
-/**
- * A pulsating user marker with animation.
- * Larger size (60x60) so pulsation is more noticeable.
- */
+/** A pulsating user marker with animation */
 const USER_MARKER_ICON = {
   url:
     "data:image/svg+xml;charset=UTF-8," +
@@ -52,6 +48,7 @@ const USER_MARKER_ICON = {
   anchor: new google.maps.Point(15, 15),
 };
 
+/** Map of amenity labels to Firestore values */
 const amenityLabelToValue = {
   "Power Outlets": "powerSocket",
   "Quiet Environment": "quietEnvironment",
@@ -73,16 +70,29 @@ const amenityIcons = [
   { key: "powerSocket", icon: "🔌" },
 ];
 
+/** Shape of your Firestore remoteWorkLocations */
+interface RemoteWorkLocation {
+  id: string;
+  lat: number;
+  lng: number;
+  name?: string;
+  status?: string;
+  images?: string[];
+  amenities?: string[];
+}
+
 export default function HeroSection() {
-  const router = useRouter();
+  // Removed const router = useRouter(); since it was unused
+
   const [center, setCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [autocomplete, setAutocomplete] =
     useState<google.maps.places.Autocomplete | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const [allLocations, setAllLocations] = useState<any[]>([]);
-  const [filteredLocations, setFilteredLocations] = useState<any[]>([]);
+  // Use typed arrays instead of any[]
+  const [allLocations, setAllLocations] = useState<RemoteWorkLocation[]>([]);
+  const [filteredLocations, setFilteredLocations] = useState<RemoteWorkLocation[]>([]);
 
   const [filters, setFilters] = useState<AmenityFilters>({
     toilets: false,
@@ -91,14 +101,21 @@ export default function HeroSection() {
     powerSocket: false,
   });
 
+  // Track user's own location
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(
     null
   );
 
+  // Responsive state
   const [isMobileOrTablet, setIsMobileOrTablet] = useState(false);
 
-  // Track if Crosshair has already applied the +3 zoom once
+  // Keep track if we've zoomed in once when using the crosshair
   const [hasCrosshairZoomed, setHasCrosshairZoomed] = useState(false);
+
+  // State for the currently clicked marker
+  const [selectedLocation, setSelectedLocation] = useState<RemoteWorkLocation | null>(
+    null
+  );
 
   useEffect(() => {
     const checkScreenSize = () => {
@@ -109,9 +126,7 @@ export default function HeroSection() {
     return () => window.removeEventListener("resize", checkScreenSize);
   }, []);
 
-  const [selectedLocation, setSelectedLocation] = useState<any>(null);
-
-  // 1. Get approximate IP location
+  // 1. Attempt IP-based approximate location
   useEffect(() => {
     const fetchIPLocation = async () => {
       try {
@@ -127,13 +142,13 @@ export default function HeroSection() {
     fetchIPLocation();
   }, []);
 
-  // 2. Fetch Firestore
+  // 2. Fetch Firestore data
   useEffect(() => {
     const fetchLocations = async () => {
       const querySnapshot = await getDocs(collection(db, "remoteWorkLocations"));
-      const fetched: any[] = [];
+      const fetched: RemoteWorkLocation[] = [];
       querySnapshot.forEach((docSnap) => {
-        const data = docSnap.data();
+        const data = docSnap.data() as Omit<RemoteWorkLocation, "id">;
         if (data.status === "approved") {
           fetched.push({ id: docSnap.id, ...data });
         }
@@ -144,20 +159,21 @@ export default function HeroSection() {
     fetchLocations();
   }, []);
 
-  // 3. Filter locations
+  // 3. Apply filters to locations
   useEffect(() => {
     const newFiltered = allLocations.filter((loc) => {
       const amArr = Array.isArray(loc.amenities) ? loc.amenities : [];
       if (filters.toilets && !amArr.includes("toilets")) return false;
       if (filters.wifi && !amArr.includes("wifi")) return false;
-      if (filters.quietEnvironment && !amArr.includes("quietEnvironment")) return false;
+      if (filters.quietEnvironment && !amArr.includes("quietEnvironment"))
+        return false;
       if (filters.powerSocket && !amArr.includes("powerSocket")) return false;
       return true;
     });
     setFilteredLocations(newFiltered);
   }, [filters, allLocations]);
 
-  // Toggle filter (mobile/tablet icon usage)
+  // Toggle filter (mobile/tablet icons)
   const toggleFilter = (amenityKey: keyof AmenityFilters) => {
     setFilters((prev) => ({ ...prev, [amenityKey]: !prev[amenityKey] }));
   };
@@ -169,15 +185,17 @@ export default function HeroSection() {
     setFilters((prev) => ({ ...prev, [amenityKey]: checked }));
   };
 
-  // Map
-  const onLoad = useCallback((map: google.maps.Map) => {
-    setMap(map);
+  // Google Maps "onLoad" callback
+  const onLoad = useCallback((mapInstance: google.maps.Map) => {
+    setMap(mapInstance);
   }, []);
 
+  // Autocomplete "onLoad" callback
   const onAutocompleteLoad = (instance: google.maps.places.Autocomplete) => {
     setAutocomplete(instance);
   };
 
+  // Autocomplete "onPlaceChanged" callback
   const onPlaceChanged = () => {
     if (!autocomplete) return;
     const place = autocomplete.getPlace();
@@ -189,7 +207,7 @@ export default function HeroSection() {
     }
   };
 
-  // Custom zoom handlers for desktop
+  // Custom zoom handlers
   const zoomIn = () => {
     if (map) {
       const currentZoom = map.getZoom() || 12;
@@ -213,7 +231,8 @@ export default function HeroSection() {
     );
   }
 
-  function getAmenityArray(amenities: string[]) {
+  // Helper to parse amenity array
+  function getAmenityArray(amenities: string[] | undefined) {
     if (!Array.isArray(amenities)) return [];
     const arr: { id: string; label: string }[] = [];
     if (amenities.includes("toilets")) {
@@ -243,9 +262,8 @@ export default function HeroSection() {
           zoom={12}
           onLoad={onLoad}
           options={{
-            styles: grayscaleStyle, // Grayscale only on the map
+            styles: grayscaleStyle,
             clickableIcons: false,
-            // Disable all default UI
             disableDefaultUI: true,
           }}
         >
@@ -345,13 +363,13 @@ export default function HeroSection() {
               /* Checkboxes (desktop) */
               <div className="flex flex-wrap gap-6 bg-white/20 dark:bg-gray-700/20 backdrop-blur-lg p-4 rounded-lg">
                 {Object.keys(amenityLabelToValue).map((label) => {
-                  const key =
+                  const amenityKey =
                     amenityLabelToValue[label as keyof typeof amenityLabelToValue];
                   return (
                     <div key={label} className="flex items-center space-x-2">
                       <Checkbox
                         id={label.toLowerCase().replace(" ", "-")}
-                        checked={filters[key]}
+                        checked={filters[amenityKey as keyof AmenityFilters]}
                         onCheckedChange={(checked) =>
                           handleCheckboxChange(label, Boolean(checked))
                         }

@@ -10,6 +10,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 
 type UserDoc = {
   id: string;
@@ -20,7 +21,7 @@ type UserDoc = {
   jobOccupation?: string; // Additional field for occupation
   isAdmin?: boolean;
   isBanned?: boolean;
-  [key: string]: any;
+  [key: string]: unknown; // Replace 'any' with 'unknown'
 };
 
 export function UsersSection() {
@@ -111,7 +112,7 @@ export function UsersSection() {
           {/* LEFT SIDE: Avatar & Basic Info */}
           <div className="flex items-center space-x-4">
             {/* Avatar (with fallback if no avatarUrl) */}
-            <img
+            <Image
               src={
                 usr.avatarUrl ||
                 "https://via.placeholder.com/64?text=No+Avatar"
