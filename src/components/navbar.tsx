@@ -75,6 +75,8 @@ export default function Navbar() {
             src="/kivvly.svg"
             alt="Kivvly Logo"
             className="mr-2 h-6 w-auto sm:h-8 md:h-10"
+            width={100}
+            height={100}
           />
         </Link>
 
