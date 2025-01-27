@@ -1,0 +1,27 @@
+runConfig:
+  minInstances: 2
+  maxInstances: 100
+  concurrency: 100
+  cpu: 2
+  memoryMiB: 1024
+
+env:
+  - variable: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+    secret: googleMapsApiKeySecret
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    secret: firebaseApiKeySecret
+
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: "kivvly.firebaseapp.com"
+
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: "kivvly"
+
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: "kivvly.firebasestorage.app"
+
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "413464866352"
+
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: "1:413464866352:web:61294a4121d0b0b28887f5"
