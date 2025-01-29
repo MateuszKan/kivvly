@@ -10,7 +10,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, MapPin } from "lucide-react";
-import Navbar from "@/components/navbar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { GoogleMapPinCard } from "@/components/google-map-pin-card";
 import { db } from "@/lib/firebase";
@@ -252,8 +251,6 @@ export default function HeroSection() {
 
   return (
     <div className="relative w-full ios-safe-screen flex flex-col overflow-hidden">
-      <Navbar />
-
       {/* Map container flexes to fill leftover vertical space */}
       <div className="flex-grow relative overflow-hidden">
         <GoogleMap

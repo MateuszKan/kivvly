@@ -1,0 +1,93 @@
+{
+  "pages": {
+    "/_not-found/page": [
+      "static/chunks/webpack-3a68ca926a023bb8.js",
+      "static/chunks/4bd1b696-16790034b4b385e7.js",
+      "static/chunks/517-1ea176f017f376e4.js",
+      "static/chunks/main-app-9173b6817939e3f7.js",
+      "static/chunks/app/_not-found/page-fd7793e5edf89fe9.js"
+    ],
+    "/layout": [
+      "static/chunks/webpack-3a68ca926a023bb8.js",
+      "static/chunks/4bd1b696-16790034b4b385e7.js",
+      "static/chunks/517-1ea176f017f376e4.js",
+      "static/chunks/main-app-9173b6817939e3f7.js",
+      "static/css/578894616cbe2947.css",
+      "static/chunks/bc9e92e6-e7ac58557a68585e.js",
+      "static/chunks/9eeab064-04da2f9c4e236772.js",
+      "static/chunks/4e6af11a-9463702556355421.js",
+      "static/chunks/353-0c5c44bf552a202f.js",
+      "static/chunks/198-35abcd0422d819b6.js",
+      "static/chunks/185-9232cfc095134275.js",
+      "static/chunks/683-5afd0e908e67f6ba.js",
+      "static/chunks/app/layout-58acaf1df9775a04.js"
+    ],
+    "/page": [
+      "static/chunks/webpack-3a68ca926a023bb8.js",
+      "static/chunks/4bd1b696-16790034b4b385e7.js",
+      "static/chunks/517-1ea176f017f376e4.js",
+      "static/chunks/main-app-9173b6817939e3f7.js",
+      "static/chunks/bc9e92e6-e7ac58557a68585e.js",
+      "static/chunks/9eeab064-04da2f9c4e236772.js",
+      "static/chunks/4e6af11a-9463702556355421.js",
+      "static/chunks/353-0c5c44bf552a202f.js",
+      "static/chunks/app/page-8326fbf8e59f229d.js"
+    ],
+    "/dashboard/page": [
+      "static/chunks/webpack-3a68ca926a023bb8.js",
+      "static/chunks/4bd1b696-16790034b4b385e7.js",
+      "static/chunks/517-1ea176f017f376e4.js",
+      "static/chunks/main-app-9173b6817939e3f7.js",
+      "static/chunks/bc9e92e6-e7ac58557a68585e.js",
+      "static/chunks/9eeab064-04da2f9c4e236772.js",
+      "static/chunks/353-0c5c44bf552a202f.js",
+      "static/chunks/198-35abcd0422d819b6.js",
+      "static/chunks/185-9232cfc095134275.js",
+      "static/chunks/971-e73eddd57b7f25d6.js",
+      "static/chunks/683-5afd0e908e67f6ba.js",
+      "static/chunks/app/dashboard/page-92d1029582b3c3c9.js"
+    ],
+    "/login/page": [
+      "static/chunks/webpack-3a68ca926a023bb8.js",
+      "static/chunks/4bd1b696-16790034b4b385e7.js",
+      "static/chunks/517-1ea176f017f376e4.js",
+      "static/chunks/main-app-9173b6817939e3f7.js",
+      "static/chunks/bc9e92e6-e7ac58557a68585e.js",
+      "static/chunks/9eeab064-04da2f9c4e236772.js",
+      "static/chunks/fc2f6fa8-24a4766934166d01.js",
+      "static/chunks/8e1d74a4-0c439cff38f1cab4.js",
+      "static/chunks/353-0c5c44bf552a202f.js",
+      "static/chunks/198-35abcd0422d819b6.js",
+      "static/chunks/405-8c21057a23df3953.js",
+      "static/chunks/683-5afd0e908e67f6ba.js",
+      "static/chunks/app/login/page-3cb05fd541896244.js"
+    ],
+    "/admin/page": [
+      "static/chunks/webpack-3a68ca926a023bb8.js",
+      "static/chunks/4bd1b696-16790034b4b385e7.js",
+      "static/chunks/517-1ea176f017f376e4.js",
+      "static/chunks/main-app-9173b6817939e3f7.js",
+      "static/chunks/bc9e92e6-e7ac58557a68585e.js",
+      "static/chunks/9eeab064-04da2f9c4e236772.js",
+      "static/chunks/353-0c5c44bf552a202f.js",
+      "static/chunks/198-35abcd0422d819b6.js",
+      "static/chunks/683-5afd0e908e67f6ba.js",
+      "static/chunks/app/admin/page-80cc33443a38d733.js"
+    ],
+    "/addplace/page": [
+      "static/chunks/webpack-3a68ca926a023bb8.js",
+      "static/chunks/4bd1b696-16790034b4b385e7.js",
+      "static/chunks/517-1ea176f017f376e4.js",
+      "static/chunks/main-app-9173b6817939e3f7.js",
+      "static/chunks/bc9e92e6-e7ac58557a68585e.js",
+      "static/chunks/9eeab064-04da2f9c4e236772.js",
+      "static/chunks/4e6af11a-9463702556355421.js",
+      "static/chunks/353-0c5c44bf552a202f.js",
+      "static/chunks/185-9232cfc095134275.js",
+      "static/chunks/405-8c21057a23df3953.js",
+      "static/chunks/971-e73eddd57b7f25d6.js",
+      "static/chunks/228-03015aea1b1cf2d6.js",
+      "static/chunks/app/addplace/page-3aa4af0397958e58.js"
+    ]
+  }
+}

@@ -13,8 +13,6 @@ import * as z from "zod";
 import imageCompression from "browser-image-compression";
 import { Autocomplete } from "@react-google-maps/api";
 
-// ---- Import your Navbar (adjust path as needed) ----
-import Navbar from "@/components/navbar";
 
 // ---- UI Components (adjust paths as needed) ----
 import { Button } from "@/components/ui/button";
@@ -251,7 +249,6 @@ export default function AddPlacePage() {
 
   return (
     <>
-      <Navbar />
 
       <div className="container mx-auto py-8">
         <Card className="w-full max-w-2xl mx-auto">
