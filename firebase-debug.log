@@ -1,0 +1,50 @@
+[debug] [2025-02-04T22:49:14.773Z] ----------------------------------------------------------------------
+[debug] [2025-02-04T22:49:14.778Z] Command:       /Users/mateuszkantarewicz/.nvm/versions/node/v20.18.2/bin/node /Users/mateuszkantarewicz/.nvm/versions/node/v20.18.2/bin/firebase deploy
+[debug] [2025-02-04T22:49:14.779Z] CLI Version:   13.29.3
+[debug] [2025-02-04T22:49:14.779Z] Platform:      darwin
+[debug] [2025-02-04T22:49:14.779Z] Node Version:  v20.18.2
+[debug] [2025-02-04T22:49:14.779Z] Time:          Tue Feb 04 2025 22:49:14 GMT+0000 (Greenwich Mean Time)
+[debug] [2025-02-04T22:49:14.779Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-02-04T22:49:14.780Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[debug] [2025-02-04T22:49:14.896Z] Field "/functions" in "firebase.json" is possibly invalid: must be object
+[debug] [2025-02-04T22:49:14.896Z] Object "/functions/0" in "firebase.json" has unknown property: {"additionalProperty":"public"}
+[debug] [2025-02-04T22:49:14.896Z] Field "/functions" in "firebase.json" is possibly invalid: must match a schema in anyOf
+[debug] [2025-02-04T22:49:14.900Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-02-04T22:49:14.900Z] > authorizing via signed-in user (mateuszkantarewicz@gmail.com)
+[debug] [2025-02-04T22:49:14.900Z] [iam] checking project kivvly for permissions ["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2025-02-04T22:49:14.900Z] Checked if tokens are valid: false, expires at: 1738663128354
+[debug] [2025-02-04T22:49:14.900Z] Checked if tokens are valid: false, expires at: 1738663128354
+[debug] [2025-02-04T22:49:14.900Z] > refreshing access token with scopes: []
+[debug] [2025-02-04T22:49:14.901Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-02-04T22:49:14.901Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-02-04T22:49:14.971Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-02-04T22:49:14.971Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-02-04T22:49:14.994Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/kivvly:testIamPermissions [none]
+[debug] [2025-02-04T22:49:14.994Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/kivvly:testIamPermissions x-goog-quota-user=projects/kivvly
+[debug] [2025-02-04T22:49:14.994Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/kivvly:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2025-02-04T22:49:15.122Z] <<< [apiv2][status] GET https://firebase-public.firebaseio.com/cli.json 200
+[debug] [2025-02-04T22:49:15.122Z] <<< [apiv2][body] GET https://firebase-public.firebaseio.com/cli.json {"cloudBuildErrorAfter":1594252800000,"cloudBuildWarnAfter":1590019200000,"defaultNode10After":1594252800000,"minVersion":"3.0.5","node8DeploysDisabledAfter":1613390400000,"node8RuntimeDisabledAfter":1615809600000,"node8WarnAfter":1600128000000}
+[debug] [2025-02-04T22:49:15.649Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/kivvly:testIamPermissions 200
+[debug] [2025-02-04T22:49:15.649Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/kivvly:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2025-02-04T22:49:15.649Z] Checked if tokens are valid: true, expires at: 1738712953971
+[debug] [2025-02-04T22:49:15.649Z] Checked if tokens are valid: true, expires at: 1738712953971
+[debug] [2025-02-04T22:49:15.650Z] >>> [apiv2][query] POST https://iam.googleapis.com/v1/projects/kivvly/serviceAccounts/kivvly@appspot.gserviceaccount.com:testIamPermissions [none]
+[debug] [2025-02-04T22:49:15.650Z] >>> [apiv2][body] POST https://iam.googleapis.com/v1/projects/kivvly/serviceAccounts/kivvly@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[debug] [2025-02-04T22:49:16.252Z] <<< [apiv2][status] POST https://iam.googleapis.com/v1/projects/kivvly/serviceAccounts/kivvly@appspot.gserviceaccount.com:testIamPermissions 200
+[debug] [2025-02-04T22:49:16.252Z] <<< [apiv2][body] POST https://iam.googleapis.com/v1/projects/kivvly/serviceAccounts/kivvly@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[debug] [2025-02-04T22:49:16.253Z] Checked if tokens are valid: true, expires at: 1738712953971
+[debug] [2025-02-04T22:49:16.253Z] Checked if tokens are valid: true, expires at: 1738712953971
+[debug] [2025-02-04T22:49:16.254Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/kivvly [none]
+[debug] [2025-02-04T22:49:16.465Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/kivvly 200
+[debug] [2025-02-04T22:49:16.466Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/kivvly {"projectId":"kivvly","projectNumber":"413464866352","displayName":"kivvly","name":"projects/kivvly","resources":{"hostingSite":"kivvly"},"state":"ACTIVE","etag":"1_e8e81289-13ff-4600-bf4e-c712d18820e5"}
+[debug] [2025-02-04T22:49:26.709Z] SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>)
+    at findDependency (/Users/mateuszkantarewicz/.nvm/versions/node/v20.18.2/lib/node_modules/firebase-tools/lib/frameworks/utils.js:188:23)
+    at prepareFrameworks (/Users/mateuszkantarewicz/.nvm/versions/node/v20.18.2/lib/node_modules/firebase-tools/lib/frameworks/index.js:124:67)
+    at deploy (/Users/mateuszkantarewicz/.nvm/versions/node/v20.18.2/lib/node_modules/firebase-tools/lib/deploy/index.js:58:54)
+    at Command.actionFn (/Users/mateuszkantarewicz/.nvm/versions/node/v20.18.2/lib/node_modules/firebase-tools/lib/commands/deploy.js:136:32)
+    at /Users/mateuszkantarewicz/.nvm/versions/node/v20.18.2/lib/node_modules/firebase-tools/lib/command.js:243:25
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[error] 
+[error] Error: An unexpected error has occurred.

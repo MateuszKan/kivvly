@@ -1,3 +1,24 @@
 {
-  "extends": ["next/core-web-vitals", "next/typescript", "google"]
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": 2021,
+    "sourceType": "module",
+    "ecmaFeatures": {
+      "jsx": true
+    }
+  },
+  "extends": [
+    "next/core-web-vitals",
+    "google",
+    "plugin:@typescript-eslint/recommended"
+  ],
+  "plugins": ["@typescript-eslint"],
+  "rules": {
+    // Add custom rules or overrides here
+    "indent": ["error", 2], // Use 2 spaces for indentation (Google style)
+    "semi": ["error", "never"], // Disable semicolons (optional)
+    "quotes": ["error", "single"], // Use single quotes (optional)
+    "require-jsdoc": "off", // Disable JSDoc requirement (optional)
+    "valid-jsdoc": "off" // Disable JSDoc validation (optional)
+  }
 }

@@ -194,7 +194,7 @@ export default function Navbar() {
 </DropdownMenuTrigger>
 
 
-            <DropdownMenuContent>
+            <DropdownMenuContent className="z-50">
               <DropdownMenuItem onClick={() => router.push("/dashboard")}>
                 <User className="mr-2 h-4 w-4" />
                 Dashboard

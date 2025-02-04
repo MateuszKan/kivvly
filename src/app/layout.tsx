@@ -1,5 +1,5 @@
 // app/layout.tsx
-import type { Metadata } from "next";
+import Metadata from "next";
 import "./globals.css";
 
 // Because this file is a Server Component, do NOT use "use client" here

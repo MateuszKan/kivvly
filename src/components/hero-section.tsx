@@ -234,8 +234,8 @@ export default function HeroSection() {
 
   // Klasy pozycjonujące kontrolki mapy zależnie od typu urządzenia
   const crosshairContainerClasses = isMobileOrTablet
-    ? "absolute right-4 top-[80px] z-[9999] flex flex-col items-center"
-    : "absolute bottom-8 right-4 z-[9999] flex flex-col items-center";
+    ? "absolute right-4 top-[80px] z-[1] flex flex-col items-center"
+    : "absolute bottom-8 right-4 z-[1] flex flex-col items-center";
 
   return (
     <div className="relative w-full h-[100dvh] flex flex-col overflow-hidden">
