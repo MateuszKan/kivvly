@@ -1,3 +1,4 @@
+// app/dashboard/HeroSection.tsx
 "use client";
 
 import { useCallback, useState, useRef, useEffect } from "react";
@@ -16,44 +17,14 @@ import { db } from "@/lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
 import CrosshairButton from "@/components/CrosshairButton";
 
-/** Grayscale styles for the map only */
+const Loading = <div />; // Placeholder for the loadingElement prop
+
+// Grayscale styles for the map
 const grayscaleStyle: google.maps.MapTypeStyle[] = [
-  /* ... your grayscale styles here ... */
+  // … (tu wstaw swoje style mapy)
 ];
 
 const defaultCenter = { lat: 40.7128, lng: -74.006 };
-
-/** Marker icons */
-const MARKER_ICON = {
-  url: "/marker.svg",
-  scaledSize: new google.maps.Size(40, 40),
-  anchor: new google.maps.Point(20, 40),
-};
-
-/** A pulsating user marker with animation */
-const USER_MARKER_ICON = {
-  url:
-    "data:image/svg+xml;charset=UTF-8," +
-    encodeURIComponent(`
-    <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60">
-      <circle cx="30" cy="30" r="10" fill="blue" opacity="1"/>
-      <circle cx="30" cy="30" r="20" fill="blue" opacity="0.5">
-        <animate attributeName="r" from="20" to="30" dur="1.5s" repeatCount="indefinite"/>
-        <animate attributeName="opacity" from="0.5" to="0" dur="1.5s" repeatCount="indefinite"/>
-      </circle>
-    </svg>
-  `),
-  scaledSize: new google.maps.Size(60, 60),
-  anchor: new google.maps.Point(15, 15),
-};
-
-/** Map of amenity labels to Firestore values */
-const amenityLabelToValue = {
-  "Power Outlets": "powerSocket",
-  "Quiet Environment": "quietEnvironment",
-  "Wi-Fi": "wifi",
-  Toilets: "toilets",
-};
 
 interface AmenityFilters {
   toilets: boolean;
@@ -62,6 +33,13 @@ interface AmenityFilters {
   powerSocket: boolean;
 }
 
+const amenityLabelToValue = {
+  "Power Outlets": "powerSocket",
+  "Quiet Environment": "quietEnvironment",
+  "Wi-Fi": "wifi",
+  Toilets: "toilets",
+};
+
 const amenityIcons = [
   { key: "toilets", icon: "🚽" },
   { key: "wifi", icon: "📶" },
@@ -69,8 +47,7 @@ const amenityIcons = [
   { key: "powerSocket", icon: "🔌" },
 ];
 
-/** Shape of your Firestore remoteWorkLocations */
-interface RemoteWorkLocation {
+interface remoteWorkLocation {
   id: string;
   lat: number;
   lng: number;
@@ -81,17 +58,17 @@ interface RemoteWorkLocation {
 }
 
 export default function HeroSection() {
-  // Removed const router = useRouter(); since it was unused
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [markerIcon, setMarkerIcon] = useState<any>(null);
+  const [userMarkerIcon, setUserMarkerIcon] = useState<any>(null);
 
   const [center, setCenter] = useState<{ lat: number; lng: number } | null>(null);
-  const [map, setMap] = useState<google.maps.Map | null>(null);
   const [autocomplete, setAutocomplete] =
     useState<google.maps.places.Autocomplete | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Use typed arrays instead of any[]
-  const [allLocations, setAllLocations] = useState<RemoteWorkLocation[]>([]);
-  const [filteredLocations, setFilteredLocations] = useState<RemoteWorkLocation[]>([]);
+  const [allLocations, setAllLocations] = useState<remoteWorkLocation[]>([]);
+  const [filteredLocations, setFilteredLocations] = useState<remoteWorkLocation[]>([]);
 
   const [filters, setFilters] = useState<AmenityFilters>({
     toilets: false,
@@ -100,32 +77,22 @@ export default function HeroSection() {
     powerSocket: false,
   });
 
-  // Track user's own location
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(
-    null
-  );
-
-  // Responsive state
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isMobileOrTablet, setIsMobileOrTablet] = useState(false);
-
-  // Keep track if we've zoomed in once when using the crosshair
   const [hasCrosshairZoomed, setHasCrosshairZoomed] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState<remoteWorkLocation | null>(null);
 
-  // State for the currently clicked marker
-  const [selectedLocation, setSelectedLocation] = useState<RemoteWorkLocation | null>(
-    null
-  );
-
+  // Device detection – traktujemy szerokość poniżej 900px jako mobile/tablet
   useEffect(() => {
-    const checkScreenSize = () => {
-      setIsMobileOrTablet(window.innerWidth <= 1024);
+    const handleResize = () => {
+      setIsMobileOrTablet(window.innerWidth < 900);
     };
-    checkScreenSize();
-    window.addEventListener("resize", checkScreenSize);
-    return () => window.removeEventListener("resize", checkScreenSize);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // 1. Attempt IP-based approximate location
+  // Pobranie lokalizacji użytkownika na podstawie IP
   useEffect(() => {
     const fetchIPLocation = async () => {
       try {
@@ -141,13 +108,13 @@ export default function HeroSection() {
     fetchIPLocation();
   }, []);
 
-  // 2. Fetch Firestore data
+  // Pobranie lokalizacji z Firestore
   useEffect(() => {
     const fetchLocations = async () => {
       const querySnapshot = await getDocs(collection(db, "remoteWorkLocations"));
-      const fetched: RemoteWorkLocation[] = [];
+      const fetched: remoteWorkLocation[] = [];
       querySnapshot.forEach((docSnap) => {
-        const data = docSnap.data() as Omit<RemoteWorkLocation, "id">;
+        const data = docSnap.data() as Omit<remoteWorkLocation, "id">;
         if (data.status === "approved") {
           fetched.push({ id: docSnap.id, ...data });
         }
@@ -158,43 +125,60 @@ export default function HeroSection() {
     fetchLocations();
   }, []);
 
-  // 3. Apply filters to locations
+  // Filtrowanie lokalizacji na podstawie udogodnień
   useEffect(() => {
     const newFiltered = allLocations.filter((loc) => {
       const amArr = Array.isArray(loc.amenities) ? loc.amenities : [];
       if (filters.toilets && !amArr.includes("toilets")) return false;
       if (filters.wifi && !amArr.includes("wifi")) return false;
-      if (filters.quietEnvironment && !amArr.includes("quietEnvironment"))
-        return false;
+      if (filters.quietEnvironment && !amArr.includes("quietEnvironment")) return false;
       if (filters.powerSocket && !amArr.includes("powerSocket")) return false;
       return true;
     });
     setFilteredLocations(newFiltered);
   }, [filters, allLocations]);
 
-  // Toggle filter (mobile/tablet icons)
   const toggleFilter = (amenityKey: keyof AmenityFilters) => {
     setFilters((prev) => ({ ...prev, [amenityKey]: !prev[amenityKey] }));
   };
 
-  // Checkbox usage (desktop)
   const handleCheckboxChange = (amenityLabel: string, checked: boolean) => {
     const amenityKey =
       amenityLabelToValue[amenityLabel as keyof typeof amenityLabelToValue];
     setFilters((prev) => ({ ...prev, [amenityKey]: checked }));
   };
 
-  // Google Maps "onLoad" callback
+  // Inicjalizacja mapy i markerów
   const onLoad = useCallback((mapInstance: google.maps.Map) => {
     setMap(mapInstance);
+    if (typeof google !== "undefined") {
+      setMarkerIcon({
+        url: "/marker.svg",
+        scaledSize: new google.maps.Size(40, 40),
+        anchor: new google.maps.Point(20, 40),
+      });
+      setUserMarkerIcon({
+        url:
+          "data:image/svg+xml;charset=UTF-8," +
+          encodeURIComponent(`
+            <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60">
+              <circle cx="30" cy="30" r="10" fill="blue" opacity="1"/>
+              <circle cx="30" cy="30" r="20" fill="blue" opacity="0.5">
+                <animate attributeName="r" from="20" to="30" dur="1.5s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" from="0.5" to="0" dur="1.5s" repeatCount="indefinite"/>
+              </circle>
+            </svg>
+          `),
+        scaledSize: new google.maps.Size(60, 60),
+        anchor: new google.maps.Point(15, 15),
+      });
+    }
   }, []);
 
-  // Autocomplete "onLoad" callback
   const onAutocompleteLoad = (instance: google.maps.places.Autocomplete) => {
     setAutocomplete(instance);
   };
 
-  // Autocomplete "onPlaceChanged" callback
   const onPlaceChanged = () => {
     if (!autocomplete) return;
     const place = autocomplete.getPlace();
@@ -206,7 +190,6 @@ export default function HeroSection() {
     }
   };
 
-  // Custom zoom handlers
   const zoomIn = () => {
     if (map) {
       const currentZoom = map.getZoom() || 12;
@@ -221,16 +204,16 @@ export default function HeroSection() {
     }
   };
 
-  // If center is null, show loader
+  // Jeśli lokalizacja użytkownika (center) nie została jeszcze pobrana,
+  // wyświetlamy skeleton (spinner)
   if (!center) {
     return (
-      <div className="w-full h-screen flex items-center justify-center">
+      <div className="w-full flex items-center justify-center h-[100dvh]">
         <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent border-solid rounded-full animate-spin"></div>
       </div>
     );
   }
 
-  // Helper to parse amenity array
   function getAmenityArray(amenities: string[] | undefined) {
     if (!Array.isArray(amenities)) return [];
     const arr: { id: string; label: string }[] = [];
@@ -249,9 +232,14 @@ export default function HeroSection() {
     return arr;
   }
 
+  // Klasy pozycjonujące kontrolki mapy zależnie od typu urządzenia
+  const crosshairContainerClasses = isMobileOrTablet
+    ? "absolute right-4 top-[80px] z-[9999] flex flex-col items-center"
+    : "absolute bottom-8 right-4 z-[9999] flex flex-col items-center";
+
   return (
-    <div className="relative w-full ios-safe-screen flex flex-col overflow-hidden">
-      {/* Map container flexes to fill leftover vertical space */}
+    <div className="relative w-full h-[100dvh] flex flex-col overflow-hidden">
+      {/* Kontener mapy */}
       <div className="flex-grow relative overflow-hidden">
         <GoogleMap
           mapContainerClassName="absolute inset-0 w-full h-full"
@@ -264,18 +252,16 @@ export default function HeroSection() {
             disableDefaultUI: true,
           }}
         >
-          {/* Firestore-based markers */}
           {filteredLocations.map((loc) => (
             <Marker
               key={loc.id}
               position={{ lat: loc.lat, lng: loc.lng }}
               onClick={() => setSelectedLocation(loc)}
               title={loc.name || "Remote Work Location"}
-              icon={MARKER_ICON}
+              icon={markerIcon || undefined}
             />
           ))}
 
-          {/* InfoWindow for selected marker */}
           {selectedLocation && (
             <InfoWindow
               position={{ lat: selectedLocation.lat, lng: selectedLocation.lng }}
@@ -291,8 +277,7 @@ export default function HeroSection() {
                   photos={selectedLocation.images || []}
                   amenities={getAmenityArray(selectedLocation.amenities)}
                   onDirectionAction={() => {
-                    const lat = selectedLocation.lat;
-                    const lng = selectedLocation.lng;
+                    const { lat, lng } = selectedLocation;
                     window.open(
                       `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`,
                       "_blank"
@@ -303,20 +288,19 @@ export default function HeroSection() {
             </InfoWindow>
           )}
 
-          {/* User marker */}
           {userLocation && (
             <Marker
               position={userLocation}
-              icon={USER_MARKER_ICON}
+              icon={userMarkerIcon || undefined}
               title="Your current location"
             />
           )}
         </GoogleMap>
 
-        {/* Search and Filters Overlay */}
+
+        {/* Nakładka wyszukiwania oraz filtrów */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 w-full max-w-3xl px-4">
           <div className="relative bg-white/30 dark:bg-gray-800/30 backdrop-blur-xl border border-white/30 dark:border-gray-700/30 rounded-xl shadow-xl p-4">
-            {/* Search */}
             <div className="relative mb-4">
               <div className="absolute left-4 top-1/2 -translate-y-1/2">
                 <MapPin className="h-5 w-5 text-gray-500" />
@@ -337,9 +321,7 @@ export default function HeroSection() {
               </Button>
             </div>
 
-            {/* FILTERS */}
             {isMobileOrTablet ? (
-              /* Icons (mobile/tablet) */
               <div className="flex flex-wrap gap-4 justify-center p-2 rounded-lg">
                 {amenityIcons.map(({ key, icon }) => (
                   <button
@@ -348,7 +330,7 @@ export default function HeroSection() {
                     className={`text-2xl px-3 py-2 rounded-full ${
                       filters[key as keyof AmenityFilters]
                         ? "bg-blue-600 text-white"
-                        : "bg-white text-gray-700"
+                        : "text-gray-700"
                     }`}
                     title={key}
                   >
@@ -357,13 +339,12 @@ export default function HeroSection() {
                 ))}
               </div>
             ) : (
-              /* Checkboxes (desktop) */
-              <div className="flex flex-wrap gap-6 bg-white/20 dark:bg-gray-700/20 backdrop-blur-lg p-4 rounded-lg">
+              <div className="flex flex-wrap gap-6 justify-center p-4 rounded-lg">
                 {Object.keys(amenityLabelToValue).map((label) => {
                   const amenityKey =
                     amenityLabelToValue[label as keyof typeof amenityLabelToValue];
                   return (
-                    <div key={label} className="flex items-center space-x-2">
+                    <div key={label} className="flex bg-transparent items-center space-x-2">
                       <Checkbox
                         id={label.toLowerCase().replace(" ", "-")}
                         checked={filters[amenityKey as keyof AmenityFilters]}
@@ -385,16 +366,14 @@ export default function HeroSection() {
           </div>
         </div>
 
-        {/* Crosshair + Zoom (desktop only) */}
-        <div className="absolute top-4 right-4 z-[9999] flex flex-col items-center">
-          {/* Crosshair always visible */}
-          <div className="mb-[10px]">
+        {/* Kontrolki Crosshair oraz Zoom */}
+        <div className={crosshairContainerClasses}>
+          <div className="mb-[40px]">
             <CrosshairButton
               onLocateAction={(lat, lng) => {
                 if (map) {
                   map.setCenter({ lat, lng });
                   setUserLocation({ lat, lng });
-                  // Only zoom +3 the FIRST time crosshair is clicked
                   if (!hasCrosshairZoomed) {
                     const currentZoom = map.getZoom() || 12;
                     map.setZoom(currentZoom + 3);
@@ -404,8 +383,6 @@ export default function HeroSection() {
               }}
             />
           </div>
-
-          {/* Custom Zoom Buttons for desktop only */}
           {!isMobileOrTablet && (
             <div className="flex flex-col items-center bg-white shadow-md rounded-md overflow-hidden">
               <button

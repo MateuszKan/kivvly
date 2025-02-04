@@ -1,128 +1,184 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+
+// Firebase imports
 import {
-  signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  signInWithPopup,
-  GoogleAuthProvider,
-  GithubAuthProvider,
-  TwitterAuthProvider,
-  OAuthProvider,
-  updateProfile,
+  signInWithEmailAndPassword,
   sendEmailVerification,
   sendPasswordResetEmail,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut,
+  updateProfile,
 } from "firebase/auth";
-import {
-  doc,
-  setDoc,
-  getDoc,
-  serverTimestamp
-} from "firebase/firestore";
-
-import { auth, db } from "@/lib/firebase";
-
-// Import FirebaseError from Firebase's app package
+import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { FirebaseError } from "firebase/app";
 
-import { z, ZodError } from "zod";
+// Your local Firebase config
+import { auth, db } from "@/lib/firebase";
 
-import Navbar from "@/components/navbar";
+// UI components (example uses shadcn/ui)
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Card,
-  CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
+  CardDescription,
+  CardContent,
 } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from "@/components/ui/tabs";
 
-// React icons (used for OAuth provider buttons)
+// Icons
 import { FcGoogle } from "react-icons/fc";
-import { FaGithub, FaTwitter, FaApple } from "react-icons/fa";
 
-/**
- * Zod schema for validating registration fields:
- * - Name: Minimum 6 characters.
- * - Email: Must be valid.
- * - Password: At least 8 characters, including at least one letter and one digit.
- */
+// Simple registration check with Zod
+import { z, ZodError } from "zod";
+
+// Zod schema for registration
 const registrationSchema = z.object({
-  registerName: z.string().min(6, "Name must be at least 6 characters."),
-  registerEmail: z.string().email("Invalid email address."),
-  registerPassword: z
+  name: z.string().min(3, "Name must be at least 3 characters."),
+  email: z.string().email("Invalid email address."),
+  password: z
     .string()
     .regex(
       /^(?=.*[A-Za-z])(?=.*\d).{8,}$/,
-      "Password must be at least 8 characters, including at least 1 letter and 1 digit."
+      "Password must be at least 8 characters including 1 digit."
     ),
 });
 
 export default function AuthPage() {
   const router = useRouter();
 
-  // Loading & message states
-  const [isLoading, setIsLoading] = useState(false);
+  // Global feedback states
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // --- Login form state ---
+  /* ---------------------------- LOGIN STATES ---------------------------- */
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
 
-  // --- Register form state ---
+  /* --------------------------- REGISTER STATES -------------------------- */
   const [registerName, setRegisterName] = useState("");
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
 
   /**
    * Handle Email/Password Login
+   * (Block if isVerified === "no")
    */
-  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+  async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setIsLoading(true);
     setErrorMessage(null);
     setSuccessMessage(null);
+    setIsLoading(true);
 
     try {
-      await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
+      // 1) Sign in
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        loginEmail,
+        loginPassword
+      );
+      const user = userCredential.user;
+
+      // 2) Check Firestore doc
+      const docRef = doc(db, "users", user.uid);
+      const snap = await getDoc(docRef);
+
+      if (snap.exists()) {
+        const data = snap.data();
+
+        // 2a) Check ban
+        if (data.isBanned) {
+          await signOut(auth);
+          setErrorMessage("Your account has been banned.");
+          return;
+        }
+
+        // 2b) Check if isVerified = "no"
+        if (data.isVerified === "no") {
+          await signOut(auth);
+          setErrorMessage("Please verify your email before logging in.");
+          return;
+        }
+
+      } else {
+        // If user doc doesn't exist, optional logic here
+        // For consistency, let's sign them out or create a doc
+        await signOut(auth);
+        setErrorMessage("No user document found. Please contact support.");
+        return;
+      }
+
+      // 3) If all is good, redirect (e.g., to home)
       router.push("/");
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        setErrorMessage(error.message || "Failed to log in. Please try again.");
+    } catch (err) {
+      if (err instanceof FirebaseError) {
+        setErrorMessage(err.message || "Failed to log in. Please try again.");
+      } else if (err instanceof Error) {
+        setErrorMessage(err.message || "Failed to log in. Please try again.");
       } else {
         setErrorMessage("Failed to log in. Please try again.");
       }
     } finally {
       setIsLoading(false);
     }
-  };
+  }
+
+  /**
+   * Forgot Password (Login tab)
+   */
+  async function handleForgotPasswordLogin() {
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    setIsLoading(true);
+
+    try {
+      if (!loginEmail) {
+        throw new Error("Please enter your email in the Email field first.");
+      }
+      await sendPasswordResetEmail(auth, loginEmail);
+      setSuccessMessage("Password reset link sent to your email!");
+    } catch (err) {
+      if (err instanceof Error) {
+        setErrorMessage(err.message || "Failed to send password reset.");
+      } else {
+        setErrorMessage("Failed to send password reset.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   /**
    * Handle Email/Password Registration
-   * - Uses Zod to validate registration fields.
-   * - If the email is already in use, shows a message suggesting the user use the "Forgot your password?" link.
    */
-  const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
+  async function handleRegister(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setIsLoading(true);
     setErrorMessage(null);
     setSuccessMessage(null);
+    setIsLoading(true);
 
     try {
-      // Validate the input using Zod
+      // Validate input with Zod
       registrationSchema.parse({
-        registerName,
-        registerEmail,
-        registerPassword,
+        name: registerName,
+        email: registerEmail,
+        password: registerPassword,
       });
 
-      // Create a new user in Firebase Authentication
+      // 1) Create user in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         registerEmail,
@@ -130,200 +186,145 @@ export default function AuthPage() {
       );
       const user = userCredential.user;
 
-      // Update the user's displayName in Firebase Auth
+      // 2) Update displayName
       await updateProfile(user, { displayName: registerName });
 
-      // Store additional user info in Firestore
+      // 3) Send built-in verification link
+      await sendEmailVerification(user);
+
+      // 4) Create user doc -> isVerified: "no" for email/password
       await setDoc(doc(db, "users", user.uid), {
         email: registerEmail,
         displayName: registerName,
-        avatarUrl: "https://via.placeholder.com/128?text=No+Avatar",
-        jobOccupation: "",
-        isAdmin: false,
+        avatarUrl: "/default-avatar.png",
         isBanned: false,
+        isVerified: "no", // Mark "no" initially
         createdAt: serverTimestamp(),
       });
 
-      // Send verification email (optional)
-      await sendEmailVerification(user);
       setSuccessMessage(
-        "Registration successful! A verification link has been sent to your email."
+        "Account created! We sent a verification link to your email."
       );
-
-      // Optionally, redirect after registration:
-      // router.push("/");
-    } catch (error: unknown) {
-      if (error instanceof ZodError) {
-        setErrorMessage(error.issues[0].message);
-      } else if (error instanceof FirebaseError && error.code === "auth/email-already-in-use") {
+    } catch (err) {
+      if (err instanceof ZodError) {
+        setErrorMessage(err.issues[0].message);
+      } else if (
+        err instanceof FirebaseError &&
+        err.code === "auth/email-already-in-use"
+      ) {
         setErrorMessage(
-          "This email is already registered. If you forgot your password, please click the 'Forgot your password?' link below."
+          "This email is already registered. Use another one or reset your password."
         );
-      } else if (error instanceof Error) {
-        setErrorMessage(
-          error.message || "Failed to create an account. Please try again."
-        );
+      } else if (err instanceof FirebaseError) {
+        setErrorMessage(err.message || "Failed to create account.");
+      } else if (err instanceof Error) {
+        setErrorMessage(err.message || "Failed to create account.");
       } else {
-        setErrorMessage("Failed to create an account. Please try again.");
+        setErrorMessage("Failed to create account.");
       }
     } finally {
       setIsLoading(false);
     }
-  };
+  }
 
   /**
-   * Handle "Forgot Password" from the Register tab
-   * - Uses the email entered in the registration form.
+   * Forgot Password (Register tab)
    */
-  const handleForgotPasswordRegister = async () => {
-    setIsLoading(true);
+  async function handleForgotPasswordRegister() {
     setErrorMessage(null);
     setSuccessMessage(null);
+    setIsLoading(true);
 
     try {
       if (!registerEmail) {
         throw new Error(
-          "Please enter your email in the registration form before requesting a password reset."
+          "Please enter your email in the registration form first."
         );
       }
       await sendPasswordResetEmail(auth, registerEmail);
-      setSuccessMessage(
-        "A password reset link has been sent to the registration email."
-      );
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        setErrorMessage(error.message || "Failed to send password reset. Please try again.");
+      setSuccessMessage("Password reset link sent!");
+    } catch (err) {
+      if (err instanceof Error) {
+        setErrorMessage(err.message || "Failed to send password reset.");
       } else {
-        setErrorMessage("Failed to send password reset. Please try again.");
+        setErrorMessage("Failed to send password reset.");
       }
     } finally {
       setIsLoading(false);
     }
-  };
+  }
 
   /**
-   * Handle OAuth Providers (Google, GitHub, Twitter, Apple)
-   * - Preserves existing data if user doc already exists, so as not to overwrite isAdmin or other fields.
+   * Google Sign In (OAuth)
+   * (If you want to block unverified Google users, you'd need to implement a separate flow.)
    */
-  const handleProviderLogin = async (providerName: string) => {
-    setIsLoading(true);
+  async function handleGoogleLogin() {
     setErrorMessage(null);
     setSuccessMessage(null);
-
-    let providerInstance:
-      | GoogleAuthProvider
-      | GithubAuthProvider
-      | TwitterAuthProvider
-      | OAuthProvider;
-
-    switch (providerName) {
-      case "Google":
-        providerInstance = new GoogleAuthProvider();
-        break;
-      case "GitHub":
-        providerInstance = new GithubAuthProvider();
-        break;
-      case "Twitter":
-        providerInstance = new TwitterAuthProvider();
-        break;
-      case "Apple":
-        // Apple uses the generic OAuthProvider with 'apple.com'
-        providerInstance = new OAuthProvider("apple.com");
-        break;
-      default:
-        return;
-    }
+    setIsLoading(true);
 
     try {
-      const userCredential = await signInWithPopup(auth, providerInstance);
-      const user = userCredential.user;
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
 
+      // Truncate displayName to max 10 chars
+      let truncatedName = user.displayName || "No Name";
+      if (truncatedName.length > 10) {
+        truncatedName = truncatedName.slice(0, 10);
+      }
+
+      // Check if user doc exists
       const userRef = doc(db, "users", user.uid);
-      const docSnap = await getDoc(userRef);
+      const snap = await getDoc(userRef);
 
-      if (docSnap.exists()) {
-        // If the user doc already exists, merge ONLY the fields we want to update.
-        await setDoc(
-          userRef,
-          {
-            email: user.email,
-            displayName: user.displayName || "No Name",
-            avatarUrl:
-              user.photoURL || "https://via.placeholder.com/128?text=No+Avatar",
-            updatedAt: serverTimestamp(),
-          },
-          { merge: true }
-        );
+      if (snap.exists()) {
+        // If doc exists, check ban status
+        const data = snap.data();
+        if (data.isBanned) {
+          await signOut(auth);
+          setErrorMessage("Your account has been banned.");
+          return;
+        }
       } else {
-        // If doc doesn't exist yet, create a new one with default values
+        // Create doc with isVerified: "yes" for Google sign-in
         await setDoc(userRef, {
           email: user.email,
-          displayName: user.displayName || "No Name",
+          displayName: truncatedName,
           avatarUrl:
             user.photoURL || "https://via.placeholder.com/128?text=No+Avatar",
-          jobOccupation: "",
-          isAdmin: false,
           isBanned: false,
+          isVerified: "yes", // Google => "yes"
           createdAt: serverTimestamp(),
         });
       }
 
+      // Then redirect or show success
       router.push("/");
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        setErrorMessage(
-          error.message || `Failed to log in with ${providerName}.`
-        );
+    } catch (err) {
+      if (err instanceof FirebaseError) {
+        setErrorMessage(err.message || "Failed to log in with Google.");
+      } else if (err instanceof Error) {
+        setErrorMessage(err.message || "Failed to log in with Google.");
       } else {
-        setErrorMessage(`Failed to log in with ${providerName}.`);
+        setErrorMessage("Failed to log in with Google.");
       }
     } finally {
       setIsLoading(false);
     }
-  };
-
-  /**
-   * Handle "Forgot Password" from the Login tab
-   * - Uses the email entered in the login form.
-   */
-  const handleForgotPasswordLogin = async () => {
-    setIsLoading(true);
-    setErrorMessage(null);
-    setSuccessMessage(null);
-
-    try {
-      if (!loginEmail) {
-        throw new Error("Please enter your email in the Email field first.");
-      }
-      await sendPasswordResetEmail(auth, loginEmail);
-      setSuccessMessage("A password reset link has been sent to your email.");
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        setErrorMessage(error.message || "Failed to send password reset. Please try again.");
-      } else {
-        setErrorMessage("Failed to send password reset. Please try again.");
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }
 
   return (
-    <div className="relative w-full h-screen flex flex-col">
-      <Navbar />
-      <div className="flex-grow flex items-center justify-center bg-gray-100">
-        <Card className="w-[350px]">
+    <div className="relative w-full h-screen flex flex-col bg-gray-100">
+      <div className="flex-grow flex items-center justify-center">
+        <Card className="w-[400px]">
           <CardHeader>
             <CardTitle>Welcome</CardTitle>
-            <CardDescription>
-              Login or create an account to get started.
-            </CardDescription>
+            <CardDescription>Login or create an account.</CardDescription>
           </CardHeader>
           <CardContent>
             {errorMessage && (
-              <div className="mb-4">
-                <p className="text-red-600 text-sm">{errorMessage}</p>
-              </div>
+              <p className="text-red-600 text-sm mb-4">{errorMessage}</p>
             )}
             {successMessage && (
               <p className="text-green-600 text-sm mb-4">{successMessage}</p>
@@ -335,27 +336,27 @@ export default function AuthPage() {
                 <TabsTrigger value="register">Register</TabsTrigger>
               </TabsList>
 
-              {/* ---------- LOGIN TAB ---------- */}
+              {/* --------------------------- LOGIN TAB --------------------------- */}
               <TabsContent value="login">
                 <form onSubmit={handleLogin}>
-                  <div className="grid w-full items-center gap-4">
+                  <div className="grid gap-4">
                     <div className="flex flex-col space-y-1.5">
-                      <Label htmlFor="login-email">Email</Label>
+                      <Label htmlFor="loginEmail">Email</Label>
                       <Input
-                        id="login-email"
-                        placeholder="Enter your email"
+                        id="loginEmail"
                         type="email"
+                        placeholder="Enter your email"
                         required
                         value={loginEmail}
                         onChange={(e) => setLoginEmail(e.target.value)}
                       />
                     </div>
                     <div className="flex flex-col space-y-1.5">
-                      <Label htmlFor="login-password">Password</Label>
+                      <Label htmlFor="loginPassword">Password</Label>
                       <Input
-                        id="login-password"
-                        placeholder="Enter your password"
+                        id="loginPassword"
                         type="password"
+                        placeholder="Enter your password"
                         required
                         value={loginPassword}
                         onChange={(e) => setLoginPassword(e.target.value)}
@@ -371,7 +372,7 @@ export default function AuthPage() {
                     {isLoading ? "Logging in..." : "Login"}
                   </Button>
 
-                  {/* Forgot Password for Login */}
+                  {/* Forgot password - Login */}
                   <div className="text-center mt-2">
                     <button
                       type="button"
@@ -389,91 +390,61 @@ export default function AuthPage() {
                       <span className="w-full border-t" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-background px-2 text-muted-foreground">
+                      <span className="bg-white px-2 text-muted-foreground">
                         Or continue with
                       </span>
                     </div>
                   </div>
 
-                  {/* OAuth buttons */}
+                  {/* Google Sign In (centered) */}
                   <div className="flex flex-col space-y-2">
                     <Button
                       variant="outline"
                       type="button"
                       disabled={isLoading}
-                      onClick={() => handleProviderLogin("Google")}
+                      onClick={handleGoogleLogin}
                     >
                       <FcGoogle className="mr-2 h-4 w-4" />
                       Google
-                    </Button>
-                    <Button
-                      variant="outline"
-                      type="button"
-                      disabled={isLoading}
-                      onClick={() => handleProviderLogin("GitHub")}
-                    >
-                      <FaGithub className="mr-2 h-4 w-4" />
-                      GitHub
-                    </Button>
-                    <Button
-                      variant="outline"
-                      type="button"
-                      disabled={isLoading}
-                      onClick={() => handleProviderLogin("Twitter")}
-                    >
-                      <FaTwitter className="mr-2 h-4 w-4" />
-                      Twitter
-                    </Button>
-                    <Button
-                      variant="outline"
-                      type="button"
-                      disabled={isLoading}
-                      onClick={() => handleProviderLogin("Apple")}
-                    >
-                      <FaApple className="mr-2 h-4 w-4" />
-                      Apple
                     </Button>
                   </div>
                 </form>
               </TabsContent>
 
-              {/* ---------- REGISTER TAB ---------- */}
+              {/* --------------------------- REGISTER TAB --------------------------- */}
               <TabsContent value="register">
                 <form onSubmit={handleRegister}>
-                  <div className="grid w-full items-center gap-4">
-                    {/* Name */}
+                  <div className="grid gap-4">
                     <div className="flex flex-col space-y-1.5">
-                      <Label htmlFor="register-name">Name</Label>
+                      <Label htmlFor="rName">Name</Label>
                       <Input
-                        id="register-name"
-                        placeholder="Minimum 6 characters"
-                        required
+                        id="rName"
+                        placeholder="Minimum 3 characters"
                         value={registerName}
                         onChange={(e) => setRegisterName(e.target.value)}
+                        required
                       />
                     </div>
-                    {/* Email */}
                     <div className="flex flex-col space-y-1.5">
-                      <Label htmlFor="register-email">Email</Label>
+                      <Label htmlFor="rEmail">Email</Label>
                       <Input
-                        id="register-email"
-                        placeholder="Enter your email"
+                        id="rEmail"
                         type="email"
-                        required
+                        placeholder="Enter your email"
                         value={registerEmail}
                         onChange={(e) => setRegisterEmail(e.target.value)}
+                        required
                       />
                     </div>
-                    {/* Password */}
                     <div className="flex flex-col space-y-1.5">
-                      <Label htmlFor="register-password">Password</Label>
+                      <Label htmlFor="rPassword">Password</Label>
                       <Input
-                        id="register-password"
-                        placeholder="Min 8 chars; at least 1 letter & 1 digit"
+                        id="rPassword"
                         type="password"
-                        required
+                        placeholder="Password must be at least 8 characters including 1 digit."
                         value={registerPassword}
                         onChange={(e) => setRegisterPassword(e.target.value)}
+                        required
                       />
                     </div>
                   </div>
@@ -486,7 +457,7 @@ export default function AuthPage() {
                     {isLoading ? "Creating account..." : "Create account"}
                   </Button>
 
-                  {/* Forgot Password for Register */}
+                  {/* Forgot password - Register */}
                   <div className="text-center mt-2">
                     <button
                       type="button"
@@ -504,61 +475,28 @@ export default function AuthPage() {
                       <span className="w-full border-t" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-background px-2 text-muted-foreground">
+                      <span className="bg-white px-2 text-muted-foreground">
                         Or continue with
                       </span>
                     </div>
                   </div>
 
-                  {/* OAuth buttons */}
+                  {/* Google Sign In (centered) */}
                   <div className="flex flex-col space-y-2">
                     <Button
                       variant="outline"
                       type="button"
                       disabled={isLoading}
-                      onClick={() => handleProviderLogin("Google")}
+                      onClick={handleGoogleLogin}
                     >
                       <FcGoogle className="mr-2 h-4 w-4" />
                       Google
-                    </Button>
-                    <Button
-                      variant="outline"
-                      type="button"
-                      disabled={isLoading}
-                      onClick={() => handleProviderLogin("GitHub")}
-                    >
-                      <FaGithub className="mr-2 h-4 w-4" />
-                      GitHub
-                    </Button>
-                    <Button
-                      variant="outline"
-                      type="button"
-                      disabled={isLoading}
-                      onClick={() => handleProviderLogin("Twitter")}
-                    >
-                      <FaTwitter className="mr-2 h-4 w-4" />
-                      Twitter
-                    </Button>
-                    <Button
-                      variant="outline"
-                      type="button"
-                      disabled={isLoading}
-                      onClick={() => handleProviderLogin("Apple")}
-                    >
-                      <FaApple className="mr-2 h-4 w-4" />
-                      Apple
                     </Button>
                   </div>
                 </form>
               </TabsContent>
             </Tabs>
           </CardContent>
-
-          <CardFooter className="flex justify-center">
-            <p className="text-sm text-gray-500">
-              By continuing, you agree to our Terms of Service and Privacy Policy.
-            </p>
-          </CardFooter>
         </Card>
       </div>
     </div>

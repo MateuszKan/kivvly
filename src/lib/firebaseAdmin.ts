@@ -1,13 +1,23 @@
+// lib/firebaseAdmin.ts
+
 import admin from "firebase-admin";
 
+// Check if Firebase Admin is already initialized
 if (!admin.apps.length) {
   admin.initializeApp({
-    // Use service account credentials or other secure config here
-    // You can store these values as environment variables:
-    // GOOGLE_APPLICATION_CREDENTIALS, FIREBASE_PROJECT_ID, etc.
-    credential: admin.credential.applicationDefault(),
+    credential: admin.credential.cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      // Replace double \n with single newline characters
+      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+    }),
+    // Optionally, add databaseURL if using Realtime Database
+    // databaseURL: "https://<YOUR_PROJECT_ID>.firebaseio.com"
   });
 }
 
-// Export the Admin Auth interface
-export const adminAuth = admin.auth();
+// Export Firestore and Auth instances
+const db = admin.firestore();
+const adminAuth = admin.auth();
+
+export { admin, db, adminAuth };

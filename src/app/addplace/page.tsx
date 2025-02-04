@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { auth, db } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import { collection, addDoc } from "firebase/firestore";
 import { uploadPlaceImage } from "@/lib/uploadPlaceImage";
 
@@ -13,8 +13,7 @@ import * as z from "zod";
 import imageCompression from "browser-image-compression";
 import { Autocomplete } from "@react-google-maps/api";
 
-
-// ---- UI Components (adjust paths as needed) ----
+// ---- UI Components ----
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -34,11 +33,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-// ---- Import the toast and Toaster from your `useToast` hook ----
+// ---- Toast Notifications ----
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 
 import Image from "next/image";
+
+import { useFirebaseUser } from "@/context/FirebaseAuthContext";
 
 // ----- Amenities array -----
 const amenities = [
@@ -56,38 +57,15 @@ const formSchema = z.object({
   location: z.string().min(2, {
     message: "Please enter a valid location.",
   }),
-  // We store amenities as an array of string IDs.
   amenities: z.array(z.string()).optional(),
 });
 
 export default function AddPlacePage() {
   const router = useRouter();
-
-  // Access our toast function from the custom hook
+  const { user, loading } = useFirebaseUser();
   const { toast } = useToast();
 
-  // ----- Track current user -----
-  const [currentUser, setCurrentUser] = useState(() => auth.currentUser);
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      setCurrentUser(user);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  // If user is not logged in, redirect
-  useEffect(() => {
-    if (!currentUser) {
-      toast({
-        title: "Unauthorized",
-        description: "You must be logged in to add a place.",
-        variant: "destructive",
-      });
-      router.push("/login?reason=unauthorized");
-    }
-  }, [currentUser, router, toast]);
-
-  // ----- Local states for Google Autocomplete lat/lng -----
+  // ----- Local states for Google Autocomplete lat/lng & address -----
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
 
@@ -120,6 +98,8 @@ export default function AddPlacePage() {
     if (place?.geometry?.location) {
       setLatitude(place.geometry.location.lat().toString());
       setLongitude(place.geometry.location.lng().toString());
+
+      // Zapisujemy adres z Google Autocomplete do pola `location`
       form.setValue("location", place.formatted_address || "");
     }
   }
@@ -143,33 +123,38 @@ export default function AddPlacePage() {
     const fileList = e.target.files;
     if (!fileList || fileList.length === 0) return;
 
-    // Only take the first file from this selection
     const newFile = fileList[0];
 
     if (selectedImages.length < 3 && newFile) {
       setSelectedImages((prev) => [...prev, newFile]);
 
-      // Preview this new file
       const newPreview = URL.createObjectURL(newFile);
       setImagePreviews((prev) => [...prev, newPreview]);
     }
 
-    // Reset the input so we can re-select if needed
     e.target.value = "";
   };
 
   // ----- Submission logic -----
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (!currentUser) {
+    if (loading) {
+      toast({
+        title: "Loading",
+        description: "Please wait...",
+      });
+      return;
+    }
+
+    if (!user) {
       toast({
         title: "Unauthorized",
         description: "You must be logged in to add a place.",
         variant: "destructive",
       });
+      router.replace("/login?reason=unauthorized");
       return;
     }
 
-    // At least one image should be selected
     if (selectedImages.length === 0) {
       toast({
         title: "No images uploaded",
@@ -188,12 +173,14 @@ export default function AddPlacePage() {
 
       try {
         for (const file of selectedImages) {
+          // Kompresja
           const compressed = await imageCompression(file, {
             maxSizeMB: 1,
             maxWidthOrHeight: 1024,
             useWebWorker: true,
           });
-          const url = await uploadPlaceImage(currentUser.uid, compressed);
+          // Upload do Firebase Storage
+          const url = await uploadPlaceImage(user.uid, compressed);
           imageUrls.push(url);
         }
       } catch (error) {
@@ -210,8 +197,11 @@ export default function AddPlacePage() {
     // 2) Add the new place to Firestore
     try {
       await addDoc(collection(db, "remoteWorkLocations"), {
-        userId: currentUser.uid,
+        userId: user.uid,
         name: values.locationName,
+        // Zapisujemy zarówno adres (jako wartości z pola location),
+        // jak i współrzędne lat, lng.
+        address: values.location,
         lat: parseFloat(latitude),
         lng: parseFloat(longitude),
         amenities: values.amenities,
@@ -231,7 +221,7 @@ export default function AddPlacePage() {
       setLatitude("");
       setLongitude("");
 
-      router.push("/");
+      router.replace("/");
     } catch (error) {
       console.error("Error adding place:", error);
       toast({
@@ -242,15 +232,37 @@ export default function AddPlacePage() {
     }
   };
 
-  // If there's no user, return null or a loading indicator
-  if (!currentUser) {
-    return null;
+  // ----- Redirect unauthenticated users -----
+  useEffect(() => {
+    if (!loading && !user) {
+      toast({
+        title: "Unauthorized",
+        description: "You must be logged in to add a place.",
+        variant: "destructive",
+      });
+      router.replace("/login?reason=unauthorized");
+    }
+  }, [user, loading, router, toast]);
+
+  console.log("AddPlacePage - User:", user, "Loading:", loading);
+
+  // Jeśli dane są w trakcie ładowania lub użytkownik nie jest zalogowany, wyświetl spinner
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent border-solid rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  // Jeśli użytkownik nie jest zalogowany, nie renderuj komponentu
+  if (!user) {
+    return null; // Przekierowanie jest obsługiwane w useEffect
   }
 
   return (
     <>
-
-      <div className="container mx-auto py-8">
+      <div className="container mx-auto py-8 mt-[100px]">
         <Card className="w-full max-w-2xl mx-auto">
           <CardHeader>
             <CardTitle>Add a New Place</CardTitle>
@@ -321,6 +333,8 @@ export default function AddPlacePage() {
                           src={url}
                           alt={`Preview ${index + 1}`}
                           className="w-20 h-20 object-cover rounded border"
+                          width={80}
+                          height={80}
                         />
                       ))}
                     </div>
@@ -385,14 +399,7 @@ export default function AddPlacePage() {
         </Card>
       </div>
 
-      <Image
-        src="/path/to/image.jpg"
-        alt="Descriptive alt"
-        width={300}
-        height={200}
-      />
-
-      {/* IMPORTANT: The Toaster component must be rendered for toasts to appear */}
+      {/* Toaster (powiadomienia) */}
       <Toaster />
     </>
   );

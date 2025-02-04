@@ -172,5 +172,4 @@ export function PlacesTable() {
         </TableBody>
       </Table>
     </div>
-  );
-}
+  );}

@@ -9,6 +9,7 @@ const libraries: ("places")[] = ["places"];
 export default function GoogleMapsProvider({ children }: { children: React.ReactNode }) {
   return (
     <LoadScript
+    loadingElement={<div></div>}
       googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ""}
       libraries={libraries}
     >

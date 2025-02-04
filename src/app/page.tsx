@@ -1,10 +1,12 @@
 // app/page.tsx
-import HeroSection from "@/components/hero-section";
+"use client";
 
+import HeroSection from "@/components/hero-section";
 
 export default function Home() {
   return (
-    <main>
+    // Instead of "h-full", you can use a "full-height" class that leverages --vh if needed
+    <main className="full-height">
       <HeroSection />
     </main>
   );

@@ -88,3 +88,66 @@ body {
 .ios-safe-screen {
   height: var(--app-height);
 }
+
+/* Definicja zmiennych CSS */
+:root {
+  --font-quicksand: 'Quicksand', sans-serif;
+  --font-montserrat: 'Montserrat', sans-serif;
+  --font-roboto: 'Roboto', sans-serif;
+  --font-lora: 'Lora', serif;
+}
+
+/* Resetowanie marginesów i paddingów oraz box-sizing */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Body używa Quicksand */
+body {
+  font-family: var(--font-quicksand);
+  margin: 0;
+  padding: 0;
+  line-height: 1.6;
+  background-color: #f9f9f9; /* Przykładowy kolor tła */
+}
+
+input, button {
+  font-family: var(--font-quicksand);
+}
+
+/* Nagłówki używają Montserrat */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-montserrat);
+  margin-bottom: 1rem;
+}
+
+/* Tekst główny używa Roboto */
+p, li{
+  font-family: var(--font-roboto);
+  color: #333; /* Przykładowy kolor tekstu */
+}
+
+/* Cytaty używają Lora */
+blockquote.quote {
+  font-family: var(--font-lora);
+  font-style: italic;
+  border-left: 4px solid #ccc;
+  padding-left: 1rem;
+  color: #666;
+  margin: 1.5rem 0;
+}
+
+
+/* Przykładowe style dla linków */
+a {
+  color: #0070f3;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}

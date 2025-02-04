@@ -3,6 +3,7 @@
     {
       "source": "functions",
       "codebase": "default",
+      "public": "out",
       "ignore": [
         "node_modules",
         ".git",
@@ -18,6 +19,12 @@
   ],
   "hosting": {
     "source": ".",
+    "rewrites": [
+      {
+        "source": "**",
+        "function": "nextjsFunc"
+      }
+    ],
     "ignore": [
       "firebase.json",
       "**/.*",

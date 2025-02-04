@@ -1,0 +1,1 @@
+self.__NEXT_FONT_MANIFEST='{"pages":{},"app":{"/Users/mateuszkantarewicz/Desktop/kivvly/src/app/layout":["static/media/3a8dc5763a8ae4b2-s.p.woff2","static/media/4f05ba3a6752a328-s.p.woff2","static/media/34a9823ac715e2c2-s.p.woff2","static/media/47cbc4e2adbc5db9-s.p.woff2"]},"appUsingSizeAdjust":true,"pagesUsingSizeAdjust":false}';
